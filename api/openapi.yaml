@@ -1,0 +1,2622 @@
+openapi: 3.0.3
+info:
+  title: '[App name] API'
+  version: 0.1.0
+  description: Source of truth for the app, admin panel, mock server and back end. Money is whole kobo integers. Times are ISO 8601 UTC.
+servers:
+- url: http://localhost:4010
+  description: Mock server (Prism)
+- url: http://localhost:3000
+  description: Real back end
+security:
+- bearerAuth: []
+tags:
+- name: Auth
+- name: Account
+- name: Browse
+- name: Provider
+- name: Bookings
+- name: Payments
+- name: Chat
+- name: Disputes
+- name: Notifications
+- name: Admin
+paths:
+  /v1/auth/register:
+    post:
+      tags:
+      - Auth
+      security: []
+      summary: Create an account (name, email, phone, password, role)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/Invalid'
+  /v1/auth/verify-email:
+    post:
+      tags:
+      - Auth
+      security: []
+      summary: Confirm email with 6-digit code or link token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - email
+              - code
+              properties:
+                email:
+                  type: string
+                  format: email
+                code:
+                  type: string
+                  example: '481926'
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthResult'
+        '422':
+          $ref: '#/components/responses/Invalid'
+  /v1/auth/resend-verification:
+    post:
+      tags:
+      - Auth
+      security: []
+      summary: Send the verification email again
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '204':
+          description: Sent
+  /v1/auth/login:
+    post:
+      tags:
+      - Auth
+      security: []
+      summary: Log in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - email
+              - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/auth/refresh:
+    post:
+      tags:
+      - Auth
+      security: []
+      summary: Exchange a refresh token for a new access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/auth/logout:
+    post:
+      tags:
+      - Auth
+      summary: End the session
+      responses:
+        '204':
+          description: Done
+  /v1/auth/forgot-password:
+    post:
+      tags:
+      - Auth
+      security: []
+      summary: Send a password reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '204':
+          description: Sent if the account exists
+  /v1/auth/reset-password:
+    post:
+      tags:
+      - Auth
+      security: []
+      summary: Set a new password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - token
+              - password
+              properties:
+                token:
+                  type: string
+                password:
+                  type: string
+                  format: password
+      responses:
+        '204':
+          description: Updated
+        '422':
+          $ref: '#/components/responses/Invalid'
+  /v1/me:
+    get:
+      tags:
+      - Account
+      summary: Own profile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: us_5
+                name: Tola Adeyemi
+                email: tola@email.com
+                phone: '+2348012345678'
+                role: customer
+                photo_url: ''
+                email_verified: true
+                status: active
+                emergency_contact:
+                  name: Ngozi
+                  phone: '+2348011122233'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags:
+      - Account
+      summary: Update own profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                photo_url:
+                  type: string
+                area:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /v1/me/emergency-contact:
+    put:
+      tags:
+      - Account
+      summary: Set emergency contact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              - phone
+              properties:
+                name:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '204':
+          description: Saved
+  /v1/me/favorites/{providerId}:
+    parameters:
+    - name: providerId
+      in: path
+      required: true
+      schema:
+        type: string
+    put:
+      tags:
+      - Account
+      summary: Save a stylist
+      responses:
+        '204':
+          description: Saved
+    delete:
+      tags:
+      - Account
+      summary: Remove a saved stylist
+      responses:
+        '204':
+          description: Removed
+  /v1/uploads/sign:
+    post:
+      tags:
+      - Account
+      summary: Get a signed URL to upload a photo or file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - purpose
+              - content_type
+              properties:
+                purpose:
+                  type: string
+                  enum:
+                  - profile_photo
+                  - portfolio
+                  - id_document
+                  - selfie
+                  - dispute_evidence
+                  - review_photo
+                content_type:
+                  type: string
+                  example: image/jpeg
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  upload_url:
+                    type: string
+                  file_url:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+              example:
+                upload_url: mock://upload
+                file_url: ''
+                expires_at: '2026-11-07T10:00:00Z'
+  /v1/categories:
+    get:
+      tags:
+      - Browse
+      security: []
+      summary: Service categories
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                      example: Makeup
+              example:
+              - id: makeup
+                name: Makeup
+              - id: braids
+                name: Braids
+              - id: wigs
+                name: Wigs
+              - id: nails
+                name: Nails
+              - id: lashes
+                name: Lashes
+              - id: barbers
+                name: Barbers
+  /v1/providers:
+    get:
+      tags:
+      - Browse
+      summary: Search stylists
+      parameters:
+      - name: q
+        in: query
+        schema:
+          type: string
+      - name: area
+        in: query
+        schema:
+          type: string
+          example: Lekki
+      - name: category
+        in: query
+        schema:
+          type: string
+      - name: min_price_kobo
+        in: query
+        schema:
+          type: integer
+      - name: max_price_kobo
+        in: query
+        schema:
+          type: integer
+      - name: date
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: min_rating
+        in: query
+        schema:
+          type: number
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProviderSummary'
+                  next_cursor:
+                    type: string
+                    nullable: true
+              example:
+                items:
+                - id: pr_88
+                  name: Ada's Glam Studio
+                  cover_photo_url: ''
+                  categories: &id001
+                  - Makeup
+                  areas: &id002
+                  - Lekki
+                  - Yaba
+                  from_price_kobo: 2500000
+                  rating_avg: 4.9
+                  review_count: 38
+                  verified: true
+                  is_favorite: false
+                - id: pr_91
+                  name: Zainab Hair Lounge
+                  cover_photo_url: ''
+                  categories:
+                  - Braids
+                  - Wigs
+                  areas:
+                  - Ikeja
+                  - Yaba
+                  from_price_kobo: 4000000
+                  rating_avg: 4.7
+                  review_count: 52
+                  verified: true
+                  is_favorite: false
+                - id: pr_95
+                  name: Chike Cuts
+                  cover_photo_url: ''
+                  categories:
+                  - Barbers
+                  areas:
+                  - Ikeja
+                  - Surulere
+                  from_price_kobo: 500000
+                  rating_avg: 4.8
+                  review_count: 64
+                  verified: true
+                  is_favorite: false
+                - id: pr_97
+                  name: Bimpe Beauty
+                  cover_photo_url: ''
+                  categories:
+                  - Lashes
+                  - Nails
+                  areas:
+                  - Lekki
+                  from_price_kobo: 1500000
+                  rating_avg: 4.6
+                  review_count: 21
+                  verified: true
+                  is_favorite: false
+                next_cursor: null
+  /v1/providers/{id}:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    get:
+      tags:
+      - Browse
+      summary: Stylist profile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderDetail'
+              example:
+                id: pr_88
+                name: Ada's Glam Studio
+                cover_photo_url: ''
+                categories: *id001
+                areas: *id002
+                from_price_kobo: 2500000
+                rating_avg: 4.9
+                review_count: 38
+                verified: true
+                is_favorite: false
+                bio: Makeup artist for weddings, events and everyday glam. I come to you with a full kit.
+                years_experience: 7
+                completed_bookings: 120
+                services:
+                - id: sv_1
+                  title: Soft glam makeup
+                  category: Makeup
+                  description: Natural, long-lasting glam for any occasion.
+                  price_kobo: 2500000
+                  duration_minutes: 90
+                  is_active: true
+                - id: sv_3
+                  title: Knotless braids, medium
+                  category: Braids
+                  description: Lightweight, neat and gentle on the scalp.
+                  price_kobo: 4500000
+                  duration_minutes: 300
+                  is_active: true
+                - id: sv_4
+                  title: Bridal makeup and gele
+                  category: Makeup
+                  description: Full bridal look with gele tying.
+                  price_kobo: 9000000
+                  duration_minutes: 180
+                  is_active: true
+                portfolio:
+                - id: pf_1
+                  image_url: ''
+                  caption: Box braids
+                  sort_order: 1
+                - id: pf_2
+                  image_url: ''
+                  caption: Bridal makeup
+                  sort_order: 2
+                - id: pf_3
+                  image_url: ''
+                  caption: Wig install
+                  sort_order: 3
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/providers/{id}/availability:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    get:
+      tags:
+      - Browse
+      summary: Open slots for a service
+      parameters:
+      - name: service_id
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: from
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    starts_at:
+                      type: string
+                      format: date-time
+              example:
+              - starts_at: '2026-11-07T07:00:00Z'
+              - starts_at: '2026-11-07T10:00:00Z'
+              - starts_at: '2026-11-07T13:00:00Z'
+              - starts_at: '2026-11-08T09:00:00Z'
+              - starts_at: '2026-11-08T12:00:00Z'
+              - starts_at: '2026-11-09T08:00:00Z'
+              - starts_at: '2026-11-09T11:00:00Z'
+              - starts_at: '2026-11-09T14:00:00Z'
+  /v1/providers/{id}/reviews:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    get:
+      tags:
+      - Browse
+      summary: Reviews
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+  /v1/provider/onboarding:
+    get:
+      tags:
+      - Provider
+      summary: Verification checklist and status
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Onboarding'
+              example:
+                id_status: done
+                selfie_status: todo
+                bank_status: todo
+                portfolio_status: todo
+                overall: incomplete
+  /v1/provider/onboarding/id:
+    post:
+      tags:
+      - Provider
+      summary: Submit ID document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - id_type
+              - id_number
+              - image_url
+              properties:
+                id_type:
+                  type: string
+                  enum:
+                  - nin
+                  - passport
+                  - drivers_licence
+                  - voters_card
+                id_number:
+                  type: string
+                image_url:
+                  type: string
+      responses:
+        '202':
+          description: Submitted for checking
+  /v1/provider/onboarding/selfie:
+    post:
+      tags:
+      - Provider
+      summary: Submit selfie for matching
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - image_url
+              properties:
+                image_url:
+                  type: string
+      responses:
+        '202':
+          description: Submitted for checking
+  /v1/provider/bank-account:
+    put:
+      tags:
+      - Provider
+      summary: Set payout account (name must match ID)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - bank_code
+              - account_number
+              properties:
+                bank_code:
+                  type: string
+                account_number:
+                  type: string
+      responses:
+        '200':
+          description: Verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account_name:
+                    type: string
+                  bank_name:
+                    type: string
+              example:
+                account_name: ADA OKAFOR
+                bank_name: Zenith Bank
+        '422':
+          $ref: '#/components/responses/Invalid'
+  /v1/provider/profile:
+    get:
+      tags:
+      - Provider
+      summary: Own stylist profile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderDetail'
+    put:
+      tags:
+      - Provider
+      summary: Update bio, areas, categories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bio:
+                  type: string
+                years_experience:
+                  type: integer
+                areas:
+                  type: array
+                  items:
+                    type: string
+                categories:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+  /v1/provider/services:
+    get:
+      tags:
+      - Provider
+      summary: List services
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Service'
+              example:
+              - &id003
+                id: sv_1
+                title: Soft glam makeup
+                category: Makeup
+                description: Natural, long-lasting glam.
+                price_kobo: 2500000
+                duration_minutes: 90
+                is_active: true
+              - id: sv_3
+                title: Knotless braids, medium
+                category: Braids
+                description: Lightweight and neat.
+                price_kobo: 4500000
+                duration_minutes: 300
+                is_active: true
+              - id: sv_4
+                title: Bridal makeup and gele
+                category: Makeup
+                description: Full bridal look with gele tying.
+                price_kobo: 9000000
+                duration_minutes: 180
+                is_active: true
+    post:
+      tags:
+      - Provider
+      summary: Add a service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+              example: *id003
+  /v1/provider/services/{id}:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    patch:
+      tags:
+      - Provider
+      summary: Edit a service
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+              example: *id003
+    delete:
+      tags:
+      - Provider
+      summary: Remove a service
+      responses:
+        '204':
+          description: Removed
+  /v1/provider/availability:
+    get:
+      tags:
+      - Provider
+      summary: Weekly hours
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Hours'
+              example:
+              - day_of_week: 1
+                start_time: 09:00
+                end_time: '18:00'
+              - day_of_week: 2
+                start_time: 09:00
+                end_time: '18:00'
+              - day_of_week: 4
+                start_time: 09:00
+                end_time: '18:00'
+              - day_of_week: 6
+                start_time: 07:00
+                end_time: '20:00'
+    put:
+      tags:
+      - Provider
+      summary: Replace weekly hours
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Hours'
+      responses:
+        '204':
+          description: Saved
+  /v1/provider/blocked-dates:
+    post:
+      tags:
+      - Provider
+      summary: Block a date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - date
+              properties:
+                date:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Blocked
+    get:
+      tags:
+      - Provider
+      summary: List blocked dates
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: date
+              example:
+              - '2026-11-12'
+              - '2026-11-20'
+  /v1/provider/blocked-dates/{date}:
+    parameters:
+    - name: date
+      in: path
+      required: true
+      schema:
+        type: string
+        format: date
+    delete:
+      tags:
+      - Provider
+      summary: Unblock a date
+      responses:
+        '204':
+          description: Removed
+  /v1/provider/portfolio:
+    get:
+      tags:
+      - Provider
+      summary: List photos
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PortfolioItem'
+              example:
+              - id: pf_1
+                image_url: ''
+                caption: Box braids
+                service_id: null
+                sort_order: 1
+              - id: pf_2
+                image_url: ''
+                caption: Bridal makeup
+                service_id: null
+                sort_order: 2
+              - id: pf_3
+                image_url: ''
+                caption: Soft glam
+                service_id: null
+                sort_order: 3
+              - id: pf_4
+                image_url: ''
+                caption: Wig install
+                service_id: null
+                sort_order: 4
+    post:
+      tags:
+      - Provider
+      summary: Add a photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - image_url
+              properties:
+                image_url:
+                  type: string
+                caption:
+                  type: string
+                service_id:
+                  type: string
+      responses:
+        '201':
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioItem'
+              example:
+                id: pf_9
+                image_url: ''
+                caption: null
+                service_id: null
+                sort_order: 5
+  /v1/provider/portfolio/order:
+    put:
+      tags:
+      - Provider
+      summary: Reorder photos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - ids
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '204':
+          description: Saved
+  /v1/provider/portfolio/{id}:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    patch:
+      tags:
+      - Provider
+      summary: Edit caption
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                caption:
+                  type: string
+      responses:
+        '200':
+          description: OK
+    delete:
+      tags:
+      - Provider
+      summary: Remove a photo
+      responses:
+        '204':
+          description: Removed
+  /v1/provider/dashboard:
+    get:
+      tags:
+      - Provider
+      summary: Today, new requests, weekly earnings
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  earned_this_week_kobo:
+                    type: integer
+                  held_kobo:
+                    type: integer
+                  new_requests:
+                    type: integer
+                  today:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Booking'
+              example:
+                earned_this_week_kobo: 13500000
+                held_kobo: 4500000
+                new_requests: 3
+                today:
+                - id: bk_1042
+                  status: paid
+                  provider:
+                    id: pr_88
+                    name: Ada's Glam Studio
+                    photo_url: ''
+                  customer:
+                    id: us_5
+                    name: Tola Adeyemi
+                  service:
+                    id: sv_3
+                    title: Knotless braids, medium
+                  scheduled_at: '2026-11-07T08:00:00Z'
+                  area: Lekki
+                  address: 12 Admiralty Way, Lekki Phase 1
+                  price_kobo: 4500000
+                  allowed_actions: []
+                  events: []
+                - id: bk_1043
+                  status: paid
+                  provider:
+                    id: pr_88
+                    name: Ada's Glam Studio
+                    photo_url: ''
+                  customer:
+                    id: us_5
+                    name: Tola Adeyemi
+                  service:
+                    id: sv_3
+                    title: Soft glam makeup
+                  scheduled_at: '2026-11-07T14:00:00Z'
+                  area: Lekki
+                  address: 12 Admiralty Way, Lekki Phase 1
+                  price_kobo: 4500000
+                  allowed_actions: []
+                  events: []
+  /v1/provider/earnings:
+    get:
+      tags:
+      - Provider
+      summary: Pending, paid out, history
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pending_kobo:
+                    type: integer
+                  paid_out_kobo:
+                    type: integer
+                  history:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Payout'
+              example:
+                pending_kobo: 4500000
+                paid_out_kobo: 9000000
+                history:
+                - id: po_1
+                  booking_id: bk_1010
+                  provider_name: Ada's Glam Studio
+                  amount_kobo: 2200000
+                  fee_kobo: 300000
+                  status: released
+                  released_at: '2026-11-04T10:00:00Z'
+                - id: po_2
+                  booking_id: bk_1004
+                  provider_name: Ada's Glam Studio
+                  amount_kobo: 6800000
+                  fee_kobo: 900000
+                  status: released
+                  released_at: '2026-11-01T10:00:00Z'
+  /v1/bookings:
+    post:
+      tags:
+      - Bookings
+      summary: Customer requests a booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCreate'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+              example:
+                id: bk_1042
+                status: requested
+                provider:
+                  id: pr_88
+                  name: Ada's Glam Studio
+                  photo_url: ''
+                customer:
+                  id: us_5
+                  name: Tola Adeyemi
+                service:
+                  id: sv_3
+                  title: Knotless braids, medium
+                scheduled_at: '2026-11-07T08:00:00Z'
+                area: Lekki
+                address: 12 Admiralty Way, Lekki Phase 1
+                price_kobo: 4500000
+                allowed_actions:
+                - cancel
+                - open_chat
+                events: []
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      tags:
+      - Bookings
+      summary: Own bookings
+      parameters:
+      - name: status
+        in: query
+        schema:
+          $ref: '#/components/schemas/BookingStatus'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Booking'
+                  next_cursor:
+                    type: string
+                    nullable: true
+              example:
+                items:
+                - id: bk_1042
+                  status: accepted
+                  provider:
+                    id: pr_88
+                    name: Ada's Glam Studio
+                    photo_url: ''
+                  customer:
+                    id: us_5
+                    name: Tola Adeyemi
+                  service:
+                    id: sv_3
+                    title: Knotless braids, medium
+                  scheduled_at: '2026-11-07T08:00:00Z'
+                  area: Lekki
+                  address: 12 Admiralty Way, Lekki Phase 1
+                  price_kobo: 4500000
+                  allowed_actions:
+                  - pay
+                  - cancel
+                  - open_chat
+                  events: []
+                - id: bk_1031
+                  status: requested
+                  provider:
+                    id: pr_91
+                    name: Zainab Hair Lounge
+                    photo_url: ''
+                  customer:
+                    id: us_5
+                    name: Tola Adeyemi
+                  service:
+                    id: sv_9
+                    title: Silk press
+                  scheduled_at: '2026-11-14T10:00:00Z'
+                  area: Lekki
+                  address: 5 Allen Avenue, Ikeja
+                  price_kobo: 3500000
+                  allowed_actions:
+                  - cancel
+                  - open_chat
+                  events: []
+                - id: bk_1010
+                  status: released
+                  provider:
+                    id: pr_88
+                    name: Ada's Glam Studio
+                    photo_url: ''
+                  customer:
+                    id: us_5
+                    name: Tola Adeyemi
+                  service:
+                    id: sv_1
+                    title: Soft glam makeup
+                  scheduled_at: '2026-10-24T09:00:00Z'
+                  area: Lekki
+                  address: 12 Admiralty Way, Lekki Phase 1
+                  price_kobo: 2500000
+                  allowed_actions:
+                  - review
+                  - open_chat
+                  events: []
+                next_cursor: null
+  /v1/bookings/{id}:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    get:
+      tags:
+      - Bookings
+      summary: Booking detail with event history
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+              example:
+                id: bk_1042
+                status: accepted
+                provider:
+                  id: pr_88
+                  name: Ada's Glam Studio
+                  photo_url: ''
+                customer:
+                  id: us_5
+                  name: Tola Adeyemi
+                service:
+                  id: sv_3
+                  title: Knotless braids, medium
+                scheduled_at: '2026-11-07T08:00:00Z'
+                area: Lekki
+                address: 12 Admiralty Way, Lekki Phase 1
+                price_kobo: 4500000
+                allowed_actions:
+                - pay
+                - cancel
+                - open_chat
+                events: []
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/bookings/{id}/accept:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Bookings
+      summary: Provider accepts
+      responses:
+        '200':
+          $ref: '#/components/responses/BookingOk'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/bookings/{id}/decline:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Bookings
+      summary: Provider declines
+      responses:
+        '200':
+          $ref: '#/components/responses/BookingOk'
+  /v1/bookings/{id}/cancel:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Bookings
+      summary: Either side cancels (refund rules apply)
+      responses:
+        '200':
+          $ref: '#/components/responses/BookingOk'
+  /v1/bookings/{id}/on-the-way:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Bookings
+      summary: Provider starts travel
+      responses:
+        '200':
+          $ref: '#/components/responses/BookingOk'
+  /v1/bookings/{id}/complete:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Bookings
+      summary: Provider marks the job done
+      responses:
+        '200':
+          $ref: '#/components/responses/BookingOk'
+  /v1/bookings/{id}/confirm:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Bookings
+      summary: Customer confirms and releases payment
+      responses:
+        '200':
+          $ref: '#/components/responses/BookingOk'
+  /v1/bookings/{id}/share-with-contact:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Bookings
+      summary: Send booking details to the emergency contact
+      responses:
+        '204':
+          description: Sent
+  /v1/bookings/{id}/help:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Bookings
+      summary: Raise an I need help alert
+      responses:
+        '202':
+          description: Team alerted
+  /v1/bookings/{id}/review:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Bookings
+      summary: Rate the job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - rating
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+                photo_urls:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+              example:
+                id: rv_1
+                rating: 5
+                comment: Lovely work
+                photo_urls: []
+                author_name: Tola A.
+                created_at: '2026-11-07T14:00:00Z'
+  /v1/bookings/{id}/pay:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    - name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+    post:
+      tags:
+      - Payments
+      summary: Start payment, returns the checkout link
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checkout_url:
+                    type: string
+                  reference:
+                    type: string
+              example:
+                checkout_url: mock://paid
+                reference: bk_1042_ref
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/bookings/{id}/payment:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    get:
+      tags:
+      - Payments
+      summary: Payment and payout status
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+  /v1/webhooks/payments:
+    post:
+      tags:
+      - Payments
+      security: []
+      summary: Server-to-server from the payment provider (signature verified)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Received
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/conversations:
+    get:
+      tags:
+      - Chat
+      summary: Inbox
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+              example:
+              - &id004
+                id: cv_1
+                booking_id: bk_1042
+                other_party:
+                  name: Ada's Glam Studio
+                  photo_url: ''
+                last_message: See you Saturday at 9
+                unread: 1
+                updated_at: '2026-10-22T08:30:00Z'
+              - id: cv_2
+                booking_id: bk_1031
+                other_party:
+                  name: Zainab Hair Lounge
+                  photo_url: ''
+                last_message: Yes, I can do that style too
+                unread: 0
+                updated_at: '2026-10-20T14:10:00Z'
+  /v1/conversations/{id}/messages:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    get:
+      tags:
+      - Chat
+      summary: History
+      parameters:
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  next_cursor:
+                    type: string
+                    nullable: true
+              example:
+                items:
+                - id: m1
+                  sender_id: pr_u_88
+                  body: Hello Tola, 9 AM Saturday works. Please have your hair washed and detangled.
+                  masked: false
+                  sent_at: '2026-10-22T08:00:00Z'
+                - id: m2
+                  sender_id: us_5
+                  body: Perfect, thank you! See you then.
+                  masked: false
+                  sent_at: '2026-10-22T08:05:00Z'
+                - id: m3
+                  sender_id: pr_u_88
+                  body: You can also reach me on [contact details hidden]
+                  masked: true
+                  sent_at: '2026-10-22T08:30:00Z'
+                next_cursor: null
+    post:
+      tags:
+      - Chat
+      summary: Send a message (contact details are masked and flagged)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - body
+              properties:
+                body:
+                  type: string
+                  maxLength: 2000
+      responses:
+        '201':
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              example:
+                id: m9
+                sender_id: us_5
+                body: Message sent
+                masked: false
+                sent_at: '2026-10-22T09:00:00Z'
+  /v1/conversations/{id}/read:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Chat
+      summary: Mark as read
+      responses:
+        '204':
+          description: Done
+  /v1/bookings/{id}/disputes:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Disputes
+      summary: Open a dispute (freezes payout)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - reason
+              properties:
+                reason:
+                  type: string
+                  enum:
+                  - no_show
+                  - not_as_agreed
+                  - late
+                  - other
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Opened
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dispute'
+              example:
+                id: dp_1
+                booking_id: bk_1042
+                reason: no_show
+                description: The stylist did not arrive.
+                status: open
+                outcome: null
+                amount_kobo: 4500000
+                created_at: '2026-11-07T10:00:00Z'
+  /v1/disputes/{id}:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    get:
+      tags:
+      - Disputes
+      summary: Status and outcome
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dispute'
+  /v1/disputes/{id}/evidence:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Disputes
+      summary: Add photos or a note
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                file_url:
+                  type: string
+                note:
+                  type: string
+      responses:
+        '201':
+          description: Added
+  /v1/notifications:
+    get:
+      tags:
+      - Notifications
+      summary: List
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+  /v1/notifications/{id}/read:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Notifications
+      summary: Mark as read
+      responses:
+        '204':
+          description: Done
+  /v1/push/subscribe:
+    post:
+      tags:
+      - Notifications
+      summary: Register a device for push notifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '204':
+          description: Saved
+  /v1/admin/auth/login:
+    post:
+      tags:
+      - Admin
+      security: []
+      summary: Admin sign-in step 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - email
+              - password
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Code required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  challenge_id:
+                    type: string
+  /v1/admin/auth/verify-2fa:
+    post:
+      tags:
+      - Admin
+      security: []
+      summary: Admin sign-in step 2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - challenge_id
+              - code
+              properties:
+                challenge_id:
+                  type: string
+                code:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/AuthResult'
+  /v1/admin/verifications:
+    get:
+      tags:
+      - Admin
+      summary: Verification queue
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Verification'
+  /v1/admin/verifications/{id}/approve:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Admin
+      summary: Approve
+      responses:
+        '204':
+          description: Approved
+  /v1/admin/verifications/{id}/reject:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Admin
+      summary: Reject with a reason
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - reason
+              properties:
+                reason:
+                  type: string
+      responses:
+        '204':
+          description: Rejected
+  /v1/admin/disputes:
+    get:
+      tags:
+      - Admin
+      summary: Disputes list
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dispute'
+  /v1/admin/disputes/{id}:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    get:
+      tags:
+      - Admin
+      summary: Dispute with chat and booking events
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dispute'
+  /v1/admin/disputes/{id}/resolve:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Admin
+      summary: Release, refund or split
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - outcome
+              properties:
+                outcome:
+                  type: string
+                  enum:
+                  - release
+                  - refund
+                  - split
+                refund_kobo:
+                  type: integer
+                note:
+                  type: string
+      responses:
+        '200':
+          description: Resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dispute'
+  /v1/admin/payouts:
+    get:
+      tags:
+      - Admin
+      summary: Held, released, failed
+      parameters:
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - held
+          - released
+          - failed
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Payout'
+  /v1/admin/payouts/{id}/retry:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Admin
+      summary: Retry a failed payout
+      responses:
+        '202':
+          description: Retrying
+  /v1/admin/users:
+    get:
+      tags:
+      - Admin
+      summary: Search users
+      parameters:
+      - name: q
+        in: query
+        schema:
+          type: string
+      - name: role
+        in: query
+        schema:
+          type: string
+          enum:
+          - customer
+          - provider
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+  /v1/admin/users/{id}/suspend:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Admin
+      summary: Suspend an account
+      responses:
+        '204':
+          description: Suspended
+  /v1/admin/users/{id}/reinstate:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    post:
+      tags:
+      - Admin
+      summary: Reinstate an account
+      responses:
+        '204':
+          description: Reinstated
+  /v1/admin/settings:
+    get:
+      tags:
+      - Admin
+      summary: Commission, timers, cancellation rules
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+    put:
+      tags:
+      - Admin
+      summary: Update settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Settings'
+      responses:
+        '200':
+          description: Saved
+  /v1/admin/reports/summary:
+    get:
+      tags:
+      - Admin
+      summary: Bookings, revenue, fees
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookings:
+                    type: integer
+                  gross_kobo:
+                    type: integer
+                  fees_kobo:
+                    type: integer
+                  open_disputes:
+                    type: integer
+  /v1/bookings/{id}/conversation:
+    parameters:
+    - $ref: '#/components/parameters/Id'
+    get:
+      tags:
+      - Bookings
+      summary: Open the chat for this booking (created if needed)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+              example: *id004
+  /v1/banks:
+    get:
+      tags:
+      - Provider
+      summary: Supported banks for payouts
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    code:
+                      type: string
+                    name:
+                      type: string
+              example:
+              - code: '044'
+                name: Access Bank
+              - code: '058'
+                name: GTBank
+              - code: '057'
+                name: Zenith Bank
+              - code: '033'
+                name: UBA
+              - code: '011'
+                name: First Bank
+              - code: '070'
+                name: Fidelity Bank
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 20
+        maximum: 100
+  responses:
+    AuthResult:
+      description: Signed in
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthResult'
+    BookingOk:
+      description: Updated booking
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Booking'
+    Unauthorized:
+      description: Not signed in or bad credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: State conflict (slot taken, wrong status, already paid)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Invalid:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: string
+              example: BOOKING_SLOT_TAKEN
+            message:
+              type: string
+              example: That time is no longer free
+    RegisterRequest:
+      type: object
+      required:
+      - name
+      - email
+      - phone
+      - password
+      - role
+      properties:
+        name:
+          type: string
+          example: Tola Adeyemi
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          example: '+2348012345678'
+        password:
+          type: string
+          format: password
+          minLength: 8
+        role:
+          type: string
+          enum:
+          - customer
+          - provider
+    AuthResult:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum:
+          - customer
+          - provider
+          - admin
+        photo_url:
+          type: string
+          nullable: true
+        email_verified:
+          type: boolean
+        status:
+          type: string
+          enum:
+          - active
+          - suspended
+        phone:
+          type: string
+        emergency_contact:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+            phone:
+              type: string
+    ProviderSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          example: Ada's Glam Studio
+        cover_photo_url:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+        areas:
+          type: array
+          items:
+            type: string
+        from_price_kobo:
+          type: integer
+          example: 2500000
+        rating_avg:
+          type: number
+          nullable: true
+        review_count:
+          type: integer
+        verified:
+          type: boolean
+        is_favorite:
+          type: boolean
+    ProviderDetail:
+      allOf:
+      - $ref: '#/components/schemas/ProviderSummary'
+      - type: object
+        properties:
+          bio:
+            type: string
+          years_experience:
+            type: integer
+          completed_bookings:
+            type: integer
+          services:
+            type: array
+            items:
+              $ref: '#/components/schemas/Service'
+          portfolio:
+            type: array
+            items:
+              $ref: '#/components/schemas/PortfolioItem'
+    Service:
+      allOf:
+      - $ref: '#/components/schemas/ServiceInput'
+      - type: object
+        properties:
+          id:
+            type: string
+    ServiceInput:
+      type: object
+      required:
+      - title
+      - category
+      - price_kobo
+      - duration_minutes
+      properties:
+        title:
+          type: string
+          example: Knotless braids medium
+        category:
+          type: string
+        description:
+          type: string
+        price_kobo:
+          type: integer
+          example: 4500000
+        duration_minutes:
+          type: integer
+          example: 300
+        is_active:
+          type: boolean
+          default: true
+    Hours:
+      type: object
+      required:
+      - day_of_week
+      - start_time
+      - end_time
+      properties:
+        day_of_week:
+          type: integer
+          minimum: 0
+          maximum: 6
+        start_time:
+          type: string
+          example: 09:00
+        end_time:
+          type: string
+          example: '18:00'
+    PortfolioItem:
+      type: object
+      properties:
+        id:
+          type: string
+        image_url:
+          type: string
+        caption:
+          type: string
+          nullable: true
+        service_id:
+          type: string
+          nullable: true
+        sort_order:
+          type: integer
+    Onboarding:
+      type: object
+      properties:
+        id_status:
+          $ref: '#/components/schemas/StepStatus'
+        selfie_status:
+          $ref: '#/components/schemas/StepStatus'
+        bank_status:
+          $ref: '#/components/schemas/StepStatus'
+        portfolio_status:
+          $ref: '#/components/schemas/StepStatus'
+        overall:
+          type: string
+          enum:
+          - incomplete
+          - in_review
+          - approved
+          - rejected
+    StepStatus:
+      type: string
+      enum:
+      - todo
+      - submitted
+      - done
+      - rejected
+    BookingStatus:
+      type: string
+      enum:
+      - requested
+      - accepted
+      - paid
+      - on_the_way
+      - completed_by_provider
+      - confirmed
+      - released
+      - declined
+      - expired
+      - cancelled
+      - disputed
+      - refunded
+    BookingCreate:
+      type: object
+      required:
+      - provider_id
+      - service_id
+      - scheduled_at
+      - address
+      - area
+      properties:
+        provider_id:
+          type: string
+        service_id:
+          type: string
+        scheduled_at:
+          type: string
+          format: date-time
+        address:
+          type: string
+        area:
+          type: string
+        notes:
+          type: string
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+          example: bk_1042
+        status:
+          $ref: '#/components/schemas/BookingStatus'
+        provider:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            photo_url:
+              type: string
+        customer:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+        service:
+          type: object
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+        scheduled_at:
+          type: string
+          format: date-time
+        area:
+          type: string
+        address:
+          type: string
+          description: Shown to the provider only after payment
+        price_kobo:
+          type: integer
+        allowed_actions:
+          type: array
+          items:
+            type: string
+            enum:
+            - accept
+            - decline
+            - cancel
+            - pay
+            - on_the_way
+            - complete
+            - confirm
+            - open_dispute
+            - review
+            - open_chat
+            - share_with_contact
+            - help
+        events:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+              actor:
+                type: string
+              at:
+                type: string
+                format: date-time
+    Payment:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - none
+          - pending
+          - held
+          - released
+          - refunded
+          - failed
+        amount_kobo:
+          type: integer
+        fee_kobo:
+          type: integer
+        payout_kobo:
+          type: integer
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+    Payout:
+      type: object
+      properties:
+        id:
+          type: string
+        booking_id:
+          type: string
+        provider_name:
+          type: string
+        amount_kobo:
+          type: integer
+        fee_kobo:
+          type: integer
+        status:
+          type: string
+          enum:
+          - held
+          - released
+          - failed
+        released_at:
+          type: string
+          format: date-time
+          nullable: true
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+        rating:
+          type: integer
+        comment:
+          type: string
+        photo_urls:
+          type: array
+          items:
+            type: string
+        author_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+        booking_id:
+          type: string
+        other_party:
+          type: object
+          properties:
+            name:
+              type: string
+            photo_url:
+              type: string
+        last_message:
+          type: string
+        unread:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+        sender_id:
+          type: string
+        body:
+          type: string
+        masked:
+          type: boolean
+          description: True if contact details were hidden
+        sent_at:
+          type: string
+          format: date-time
+    Dispute:
+      type: object
+      properties:
+        id:
+          type: string
+        booking_id:
+          type: string
+        reason:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+          - open
+          - resolved
+        outcome:
+          type: string
+          nullable: true
+        amount_kobo:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        body:
+          type: string
+        read:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    Verification:
+      type: object
+      properties:
+        id:
+          type: string
+        user_name:
+          type: string
+        role:
+          type: string
+        id_type:
+          type: string
+        selfie_match:
+          type: string
+          enum:
+          - match
+          - review
+          - no_match
+        submitted_at:
+          type: string
+          format: date-time
+    Settings:
+      type: object
+      properties:
+        commission_percent:
+          type: number
+          example: 12
+        provider_response_hours:
+          type: integer
+          example: 12
+        payment_window_hours:
+          type: integer
+          example: 2
+        auto_confirm_hours:
+          type: integer
+          example: 48
+        free_cancel_hours:
+          type: integer
+          example: 24

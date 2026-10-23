@@ -1,0 +1,40 @@
+/* Design tokens: change the palette here and every screen follows. */
+:root {
+  /* Default: warm cream, cocoa and terracotta */
+  --bg: #F6EFE4;
+  --surface: #FFFBF5;
+  --border: #E6D6C3;
+  --text: #3B2418;
+  --muted: #6B5547;
+  --accent: #B5532F;
+  --on-accent: #FFFFFF;
+  --panel: #EFE2CF;
+  --success-bg: #E5EFE0;
+  --success-text: #2F5A2A;
+  --warn-bg: #F6E3C5;
+  --warn-text: #6B4300;
+
+  --ph-1: #C98F6B;
+  --ph-2: #8A5A44;
+  --ph-3: #E2C4A4;
+  --ph-4: #D9B99B;
+  --danger: #9B2C1F;
+  --danger-bg: #FBE9E5;
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+
+  --radius-card: 18px;
+  --radius-button: 14px;
+  --tap-min: 44px;
+}
+
+/* Option B: plum and blush. Replace the values above with these.
+  --bg: #FAF3F2; --surface: #FFFFFF; --border: #EBD8DA; --text: #2D1B2E;
+  --muted: #6E5A63; --accent: #8E2F5A; --panel: #F3DEE2;
+*/
+
+/* Option C: black and gold.
+  --bg: #F7F3EA; --surface: #FFFFFF; --border: #E4DCC8; --text: #17140F;
+  --muted: #66604F; --accent: #8A6612; --panel: #EFE7D3;
+*/
