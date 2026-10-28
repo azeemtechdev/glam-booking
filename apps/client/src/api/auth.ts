@@ -23,7 +23,9 @@ export function saveSession(r: AuthResult) {
   localStorage.setItem('user_role', r.user.role)
 }
 
+// Ends the session on the server too (best effort), then forgets it locally.
 export function logout() {
+  api<void>('/auth/logout', { method: 'POST' }, true).catch(() => {})
   localStorage.clear()
 }
 

@@ -1,34 +1,44 @@
-# [App name]: project starter
+# [App name]
 
 ```
-api/openapi.yaml           the contract: source of truth for everything
-apps/web/                  customer + stylist app and admin panel (React, TypeScript)
-apps/web/src/styles/       tokens.css: all colours and type in one file
+api/openapi.yaml           the contract: source of truth for every endpoint
+apps/server/               back end (Node, TypeScript, Fastify, Drizzle) on Supabase Postgres
+apps/client/               customer + stylist app and admin panel (React, TypeScript)
+apps/client/src/styles/    tokens.css: all colours and type in one file
 payment-proof/             phase 2: prove pay, hold, confirm, payout in test mode
 ```
 
-## Step 1: check the contract and start the mock server
+## Server
 
 ```bash
-npx @redocly/cli lint api/openapi.yaml            # checks the contract
-npx @stoplight/prism-cli mock api/openapi.yaml -p 4010   # fake API at http://localhost:4010/v1
-```
-
-The mock returns realistic fake data built from the examples in the contract. Add `example:` values to schemas to make it more realistic.
-
-## Step 2: create the web app (inside apps/web)
-
-```bash
-cd apps/web
-npm create vite@latest . -- --template react-ts
+cd apps/server
+cp .env.example .env       # set DATABASE_URL (Supabase transaction pooler) and JWT_SECRET
 npm install
-npx openapi-typescript ../../api/openapi.yaml -o src/api/schema.d.ts   # typed API
-npm run dev
+npm run db:migrate         # creates the tables in Supabase
+npm run admin:create -- admin@example.com "Admin" "a-long-password"   # prints the authenticator secret
+npm run dev                # http://localhost:3000/v1
 ```
 
-Import `src/styles/tokens.css` once in `main.tsx`. Point the API base URL at `http://localhost:4010/v1`; later switch to the real back end by changing that one setting.
+In development, emails (verification codes, reset links) are printed in the server log.
+Schema changes: edit `src/db/schema.ts`, then `npx drizzle-kit generate --name <change>` and `npm run db:migrate`.
 
-## Step 3: payment proof (test mode only)
+## Client
+
+```bash
+cd apps/client
+npm install
+npm run dev                # http://localhost:5173, talks to http://localhost:3000
+```
+
+To point at another server, set `VITE_API_URL` in `apps/client/.env`.
+
+## Contract
+
+```bash
+npx @redocly/cli lint api/openapi.yaml
+```
+
+## Payment proof (test mode only)
 
 ```bash
 cd payment-proof

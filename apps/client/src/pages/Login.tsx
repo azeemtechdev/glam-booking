@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { login, saveSession, homeFor } from '../api/auth'
+import { login, saveSession, homeFor, resendVerification } from '../api/auth'
+import type { ApiError } from '../api/client'
 
 export default function Login() {
   const go = useNavigate()
@@ -20,6 +21,10 @@ export default function Login() {
       saveSession(r)
       go(homeFor(r.user.role))
     } catch (err) {
+      if ((err as ApiError).code === 'EMAIL_NOT_VERIFIED') {
+        await resendVerification(email).catch(() => {})
+        return go('/verify-email', { state: { email } })
+      }
       setError((err as Error).message)
     } finally {
       setBusy(false)
