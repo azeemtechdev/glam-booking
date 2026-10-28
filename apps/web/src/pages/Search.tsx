@@ -48,7 +48,7 @@ export default function Search() {
       {list.loading && <Loading />}
       {list.error && <ErrorBox message={list.error} retry={list.retry} />}
       {list.data && list.data.items.length === 0 && <div className="panel"><b>No stylists match</b><span className="muted">Try removing a filter.</span></div>}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div className="cards">
         {list.data?.items.map((p, i) => <ProviderCard key={p.id} p={p} i={i} />)}
       </div>
     </main>

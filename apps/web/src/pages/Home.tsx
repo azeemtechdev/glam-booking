@@ -42,7 +42,7 @@ export default function Home() {
       {list.data && list.data.items.length === 0 && (
         <div className="panel"><b>No stylists found</b><span className="muted">Try a different category or search.</span></div>
       )}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div className="cards">
         {list.data?.items.map((p, i) => <ProviderCard key={p.id} p={p} i={i} />)}
       </div>
       <BottomNav />

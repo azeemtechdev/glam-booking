@@ -24,6 +24,14 @@ import ProServices from './pages/ProServices'
 import ProPortfolio from './pages/ProPortfolio'
 import ProEarnings from './pages/ProEarnings'
 import ProOnboarding from './pages/ProOnboarding'
+import AdminLayout from './components/AdminLayout'
+import AdminLogin from './pages/AdminLogin'
+import AdminDisputes from './pages/AdminDisputes'
+import AdminDispute from './pages/AdminDispute'
+import AdminVerifications from './pages/AdminVerifications'
+import AdminPayouts from './pages/AdminPayouts'
+import AdminUsers from './pages/AdminUsers'
+import AdminSettings from './pages/AdminSettings'
 
 const secure = (el: ReactNode) => <RequireAuth>{el}</RequireAuth>
 
@@ -53,6 +61,15 @@ export default function App() {
       <Route path="/pro/portfolio" element={secure(<ProPortfolio />)} />
       <Route path="/pro/earnings" element={secure(<ProEarnings />)} />
       <Route path="/pro/onboarding" element={secure(<ProOnboarding />)} />
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminDisputes />} />
+        <Route path="disputes/:id" element={<AdminDispute />} />
+        <Route path="verifications" element={<AdminVerifications />} />
+        <Route path="payouts" element={<AdminPayouts />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="settings" element={<AdminSettings />} />
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

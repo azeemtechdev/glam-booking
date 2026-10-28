@@ -55,7 +55,7 @@ export default function ProCalendar() {
           <label className="row" style={{ cursor: 'pointer' }}><b>{NAMES[n]}</b>
             <input type="checkbox" checked={days[n].on} onChange={(e) => set(n, { on: e.target.checked })} aria-label={`Available on ${NAMES[n]}`} style={{ width: 24, height: 24 }} /></label>
           {days[n].on
-            ? <div className="row"><input type="time" className="input" aria-label={`${NAMES[n]} start time`} value={days[n].start} onChange={(e) => set(n, { start: e.target.value })} />
+            ? <div className="time-row"><input type="time" className="input" aria-label={`${NAMES[n]} start time`} value={days[n].start} onChange={(e) => set(n, { start: e.target.value })} />
                 <span className="muted">to</span><input type="time" className="input" aria-label={`${NAMES[n]} end time`} value={days[n].end} onChange={(e) => set(n, { end: e.target.value })} /></div>
             : <span className="muted">Off</span>}
         </div>

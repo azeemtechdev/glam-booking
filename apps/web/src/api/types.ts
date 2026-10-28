@@ -23,3 +23,9 @@ export interface Payout { id: string; booking_id: string; amount_kobo: number; f
 export interface Dashboard { earned_this_week_kobo: number; held_kobo: number; new_requests: number; today: Booking[] }
 export interface Earnings { pending_kobo: number; paid_out_kobo: number; history: Payout[] }
 export interface Bank { code: string; name: string }
+export interface Dispute { id: string; booking_id: string; customer_name?: string; provider_name?: string; service_title?: string; reason: string; description: string; status: 'open' | 'resolved'; outcome: string | null; amount_kobo: number; created_at: string }
+export interface Verification { id: string; user_name: string; role: string; id_type: string; selfie_match: 'match' | 'review' | 'no_match'; submitted_at: string }
+export interface AdminPayout extends Payout { provider_name?: string }
+export interface AdminUser { id: string; name: string; email: string; role: 'customer' | 'provider' | 'admin'; status: 'active' | 'suspended' }
+export interface Settings { commission_percent: number; provider_response_hours: number; payment_window_hours: number; auto_confirm_hours: number; free_cancel_hours: number }
+export interface Summary { bookings: number; gross_kobo: number; fees_kobo: number; open_disputes: number }

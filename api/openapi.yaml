@@ -1504,7 +1504,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Conversation'
               example:
-              - &id004
+              - &id005
                 id: cv_1
                 booking_id: bk_1042
                 other_party:
@@ -1770,7 +1770,21 @@ paths:
                   type: string
       responses:
         '200':
-          $ref: '#/components/responses/AuthResult'
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResult'
+              example:
+                access_token: admin-token
+                refresh_token: admin-refresh
+                user:
+                  id: ad_1
+                  name: Admin
+                  email: admin@example.com
+                  role: admin
+                  email_verified: true
+                  status: active
   /v1/admin/verifications:
     get:
       tags:
@@ -1785,6 +1799,25 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Verification'
+              example:
+              - id: vf_1
+                user_name: Ada Okafor
+                role: provider
+                id_type: nin
+                selfie_match: match
+                submitted_at: '2026-11-06T09:30:00Z'
+              - id: vf_2
+                user_name: Zainab Bello
+                role: provider
+                id_type: passport
+                selfie_match: review
+                submitted_at: '2026-11-06T09:30:00Z'
+              - id: vf_3
+                user_name: Emeka Eze
+                role: provider
+                id_type: drivers_licence
+                selfie_match: match
+                submitted_at: '2026-11-06T09:30:00Z'
   /v1/admin/verifications/{id}/approve:
     parameters:
     - $ref: '#/components/parameters/Id'
@@ -1830,6 +1863,30 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Dispute'
+              example:
+              - &id004
+                id: dp_1
+                booking_id: bk_1042
+                customer_name: Tola Adeyemi
+                provider_name: Ada's Glam Studio
+                service_title: Knotless braids, medium
+                reason: no_show
+                description: The stylist did not arrive and stopped replying to my messages.
+                status: open
+                outcome: null
+                amount_kobo: 4500000
+                created_at: '2026-11-07T10:00:00Z'
+              - id: dp_2
+                booking_id: bk_1038
+                customer_name: Chinedu Obi
+                provider_name: Zainab Hair Lounge
+                service_title: Silk press
+                reason: not_as_agreed
+                description: The style was different from the photos we agreed on.
+                status: open
+                outcome: null
+                amount_kobo: 3500000
+                created_at: '2026-11-07T10:00:00Z'
   /v1/admin/disputes/{id}:
     parameters:
     - $ref: '#/components/parameters/Id'
@@ -1844,6 +1901,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Dispute'
+              example: *id004
   /v1/admin/disputes/{id}/resolve:
     parameters:
     - $ref: '#/components/parameters/Id'
@@ -1877,6 +1935,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Dispute'
+              example:
+                id: dp_1
+                booking_id: bk_1042
+                customer_name: Tola Adeyemi
+                provider_name: Ada's Glam Studio
+                service_title: Knotless braids, medium
+                reason: no_show
+                description: The stylist did not arrive and stopped replying to my messages.
+                status: resolved
+                outcome: refund
+                amount_kobo: 4500000
+                created_at: '2026-11-07T10:00:00Z'
   /v1/admin/payouts:
     get:
       tags:
@@ -1900,6 +1970,35 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Payout'
+              example:
+              - id: po_1
+                booking_id: bk_1040
+                provider_name: Ada's Glam Studio
+                amount_kobo: 3960000
+                fee_kobo: 540000
+                status: held
+                released_at: null
+              - id: po_2
+                booking_id: bk_1035
+                provider_name: Zainab Hair Lounge
+                amount_kobo: 2200000
+                fee_kobo: 300000
+                status: released
+                released_at: '2026-11-04T10:00:00Z'
+              - id: po_3
+                booking_id: bk_1033
+                provider_name: Chike Cuts
+                amount_kobo: 440000
+                fee_kobo: 60000
+                status: failed
+                released_at: null
+              - id: po_4
+                booking_id: bk_1030
+                provider_name: Bimpe Beauty
+                amount_kobo: 1320000
+                fee_kobo: 180000
+                status: held
+                released_at: null
   /v1/admin/payouts/{id}/retry:
     parameters:
     - $ref: '#/components/parameters/Id'
@@ -1936,6 +2035,35 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
+              example:
+              - id: us_5
+                name: Tola Adeyemi
+                email: tola@email.com
+                role: customer
+                email_verified: true
+                status: active
+                photo_url: ''
+              - id: us_8
+                name: Ada Okafor
+                email: ada@email.com
+                role: provider
+                email_verified: true
+                status: active
+                photo_url: ''
+              - id: us_9
+                name: Chinedu Obi
+                email: chinedu@email.com
+                role: customer
+                email_verified: true
+                status: suspended
+                photo_url: ''
+              - id: us_12
+                name: Zainab Bello
+                email: zainab@email.com
+                role: provider
+                email_verified: true
+                status: active
+                photo_url: ''
   /v1/admin/users/{id}/suspend:
     parameters:
     - $ref: '#/components/parameters/Id'
@@ -2002,6 +2130,11 @@ paths:
                     type: integer
                   open_disputes:
                     type: integer
+              example:
+                bookings: 128
+                gross_kobo: 412500000
+                fees_kobo: 49500000
+                open_disputes: 2
   /v1/bookings/{id}/conversation:
     parameters:
     - $ref: '#/components/parameters/Id'
@@ -2016,7 +2149,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Conversation'
-              example: *id004
+              example: *id005
   /v1/banks:
     get:
       tags:
@@ -2568,6 +2701,12 @@ components:
         created_at:
           type: string
           format: date-time
+        customer_name:
+          type: string
+        provider_name:
+          type: string
+        service_title:
+          type: string
     Notification:
       type: object
       properties:

@@ -44,7 +44,7 @@ export default function ProPortfolio() {
       {loading && <Loading />}
       {error && <ErrorBox message={error} retry={retry} />}
       <div className="panel" role="status"><b>{items.length} of {MIN} photos</b><span className="muted">{items.length >= MIN ? 'You have enough photos to be listed.' : `Add ${MIN - items.length} more to finish your profile.`}</span></div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div className="cards">
         {items.map((it, i) => (
           <div key={it.id} className="stack" style={{ gap: 6 }}>
             <Photo src={it.image_url} label={it.caption ?? 'Photo'} i={i} style={{ height: 160 }} />

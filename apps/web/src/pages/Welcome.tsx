@@ -10,10 +10,10 @@ export default function Welcome() {
       <p className="muted" style={{ fontSize: 15, margin: 0 }}>
         Book trusted makeup artists and stylists. Pay safely, and they are paid when the job is done.
       </p>
+      <p className="muted" style={{ margin: 0 }}>By continuing you agree to the Terms and Privacy Policy.</p>
       <div className="bottom-bar"><div>
         <button className="btn" onClick={() => go('/signup')}>Create account</button>
         <button className="btn btn-alt" onClick={() => go('/login')}>Log in</button>
-        <div className="muted center">By continuing you agree to the Terms and Privacy Policy.</div>
       </div></div>
     </main>
   )
